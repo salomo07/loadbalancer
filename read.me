@@ -1,0 +1,9 @@
+https://download.redisinsight.redis.com/latest/RedisInsight-v2-win-installer.exe
+
+-Cara kerja algoritma LRT (Least Response Time) adalah sebagai berikut:
+
+Pemantauan Waktu Respons: Load balancer secara terus-menerus memantau waktu respons dari setiap server dalam cluster. Ini dapat dilakukan dengan mengirimkan permintaan tes atau ping ke setiap server dan mencatat berapa lama waktu yang diperlukan untuk menerima respons.
+
+Perbandingan Waktu Respons: Load balancer menyimpan catatan waktu respons dari setiap server. Ketika permintaan baru masuk, load balancer akan membandingkan waktu respons dari server yang tersedia. Server dengan waktu respons yang paling rendah akan dipilih sebagai server tujuan.
+
+Penyebaran Beban: Permintaan pelanggan kemudian diarahkan ke server yang dipilih berdasarkan waktu respons terendah. Ini membantu memastikan bahwa server yang memiliki kinerja lebih baik akan melayani lebih banyak permintaan.
