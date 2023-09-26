@@ -15,26 +15,20 @@ import (
 func LoadBalancerRouters(router *fasthttprouter.Router) {
 	router.GET("/lb/:appid/*path", SendToNextServer)
 	router.POST("/lb/:appid/*path", SendToNextServer)
-	// @Summary Get a list of items
-	// @Description Get a list server of application
-	// @ID get-item-list
-	// @Accept  json
-	// @Produce  json
-	// @Success 200 {object} []models.Server
-	// @Router /servers/:appid/ [get]
+
 	router.GET("/servers/:appid", GetServerPool)    //Menampilkan pool server berdasarkan appid
 	router.POST("/servers/:appid", AddServerHandle) //Menyimpan pool server berdasarkan appid
 
 	router.HandleMethodNotAllowed = false
 	router.MethodNotAllowed = func(ctx *fasthttp.RequestCtx) {
 		ctx.SetStatusCode(fasthttp.StatusMethodNotAllowed)
-		jsonResponse := `{"messege": "Your method is not allowed"}`
-		fmt.Fprintf(ctx, jsonResponse)
+		res := models.DefaultResponse{Messeges: "Your method is not allowed", Status: fasthttp.StatusMethodNotAllowed}
+		fmt.Fprintf(ctx, controllers.StructToJson(res))
 	}
 	router.NotFound = func(ctx *fasthttp.RequestCtx) {
 		ctx.SetStatusCode(fasthttp.StatusNotFound)
-		jsonResponse := `{"messege": "API is not found"}`
-		fmt.Fprintf(ctx, jsonResponse)
+		res := models.DefaultResponse{Messeges: "API is not found", Status: fasthttp.StatusNotFound}
+		fmt.Fprintf(ctx, controllers.StructToJson(res))
 	}
 }
 func AddServerHandle(ctx *fasthttp.RequestCtx) {
@@ -42,7 +36,8 @@ func AddServerHandle(ctx *fasthttp.RequestCtx) {
 	ctx.Response.Header.Set("Content-Type", "application/json")
 	if appid == "" {
 		ctx.SetStatusCode(fasthttp.StatusNotFound)
-		fmt.Fprintf(ctx, `{"messege": "AppId is not found"}`)
+		resJson := models.DefaultResponse{Messeges: "AppId is not found", Status: fasthttp.StatusNotFound}
+		fmt.Fprintf(ctx, controllers.StructToJson(resJson))
 	} else {
 		controllers.SaveServers(appid, string(ctx.Request.Body()))
 		fmt.Fprintf(ctx, appid+" was saved")
@@ -54,17 +49,21 @@ func GetServerPool(ctx *fasthttp.RequestCtx) {
 	res := services.GetValueRedis(appid)
 	if res == "" {
 		ctx.SetStatusCode(fasthttp.StatusNotFound)
-		fmt.Fprintf(ctx, `{"messege": "AppId is not found"}`)
+		resJson := models.DefaultResponse{Messeges: "AppId is not found", Status: fasthttp.StatusNotFound}
+		fmt.Fprintf(ctx, controllers.StructToJson(resJson))
 	} else {
 		fmt.Fprintf(ctx, res)
 	}
-
 }
 
 func SendToNextServer(ctx *fasthttp.RequestCtx) {
 	appid := ctx.UserValue("appid").(string)
 	path := strings.Replace(string(ctx.Path()), "/lb/"+appid+"/", "", -1)
 	fastestServer, isPathSaved, poolServers := controllers.GetFastestServer(appid, path)
+	if fastestServer == "" {
+		res := models.DefaultResponse{Status: fasthttp.StatusGatewayTimeout, Messeges: "Request cant send forward : Next Server Address is not found"}
+		fmt.Fprintf(ctx, controllers.StructToJson(res))
+	}
 	print(string(ctx.Method()) + " : " + fastestServer + path)
 
 	client := &fasthttp.Client{}
@@ -98,6 +97,9 @@ func SendToNextServer(ctx *fasthttp.RequestCtx) {
 		}
 		go controllers.SaveResponseTime(appid, poolServers, models.Server{Address: fastestServer, Path: path, Online: isOnline, Latency: responseTime, LastUpdate: time.Now().Format("2006-01-02 15:04:05")})
 	}
+
 	fasthttp.ReleaseRequest(forwardedRequest)
 	fasthttp.ReleaseResponse(forwardedResponse)
+	res := models.DefaultResponse{Status: fasthttp.StatusInternalServerError, Messeges: "Request cant send forward : " + err.Error()}
+	fmt.Fprintf(ctx, controllers.StructToJson(res))
 }
