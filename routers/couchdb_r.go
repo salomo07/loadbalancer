@@ -10,7 +10,7 @@ import (
 )
 
 func CouchDBRouters(router *fasthttprouter.Router) {
-	router.PUT("/cdb/create", SendToNextServer)
+	router.PUT("/cdb/create/_user", SendToNextServer)
 	router.POST("/lb/:appid/*path", SendToNextServer)
 
 	router.GET("/servers/:appid", GetServerPool)    //Menampilkan pool server berdasarkan appid
