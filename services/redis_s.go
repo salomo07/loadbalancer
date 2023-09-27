@@ -11,11 +11,8 @@ import (
 func SaveValueRedis(key string, value string) {
 	startTime := time.Now()
 	var ctx = context.Background()
-	if config.REDIS_CRED == "" {
-		config.GetCredRedis()
-	}
 
-	opt, _ := redis.ParseURL(config.REDIS_CRED)
+	opt, _ := redis.ParseURL(config.GetCredRedis())
 	client := redis.NewClient(opt)
 
 	client.Set(ctx, key, value, 0)
@@ -27,11 +24,8 @@ func SaveValueRedis(key string, value string) {
 
 func GetValueRedis(key string) string {
 	var ctx = context.Background()
-	if config.REDIS_CRED == "" {
-		config.GetCredRedis()
-	}
 
-	opt, _ := redis.ParseURL(config.REDIS_CRED)
+	opt, _ := redis.ParseURL(config.GetCredRedis())
 	client := redis.NewClient(opt)
 	// startTime := time.Now()
 	var res = client.Get(ctx, key).Val()

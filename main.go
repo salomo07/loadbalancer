@@ -13,7 +13,7 @@ var port = "1234"
 func main() {
 	router := fasthttprouter.New()
 	routers.LoadBalancerRouters(router)
-
+	routers.CouchDBRouters(router)
 	server := &fasthttp.Server{Handler: router.Handler}
 	go func() {
 		if err := server.ListenAndServe(":" + port); err != nil {
